@@ -2,14 +2,13 @@ import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyCkucOMovZ8SicNFam-r4dAHjTlJGnmI7A",
-  authDomain: "mad-maceda-i.firebaseapp.com",
-  projectId: "mad-maceda-i",
-  storageBucket: "mad-maceda-i.firebasestorage.app",
-  messagingSenderId: "361243049000",
-  appId: "1:361243049000:web:662289de15e70d441f891d"
+  apiKey: "AIzaSyDjLtsulXhW7Xn2suLXLQowZt8BN0pVOg8",
+  authDomain: "mad-concha.firebaseapp.com",
+  projectId: "mad-concha",
+  storageBucket: "mad-concha.firebasestorage.app",
+  messagingSenderId: "948940304124",
+  appId: "1:948940304124:web:9a1bc6caad9d9616d7f179"
 };
 
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
-  
