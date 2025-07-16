@@ -237,7 +237,7 @@ const PaymentServicesPage: React.FC<PaymentServicesPageProps> = ({
     if (
       manualServiceName.trim() &&
       typeof manualServicePrice === "number" &&
-      manualServicePrice > 0
+      manualServicePrice >= 0 // allow zero price
     ) {
       setManualServices(prev => [...prev, { name: manualServiceName.trim(), price: manualServicePrice }]);
       setManualServiceName("");
@@ -1084,7 +1084,7 @@ const PaymentServicesPage: React.FC<PaymentServicesPageProps> = ({
             <Button
               variant="outlined"
               onClick={handleAddManualService}
-              disabled={!manualServiceName.trim() || !manualServicePrice || Number(manualServicePrice) <= 0}
+              disabled={!manualServiceName.trim() || manualServicePrice === "" || isNaN(Number(manualServicePrice)) || Number(manualServicePrice) < 0}
               sx={{ flexShrink: 0, minWidth: 40, height: 40 }}
             >
               Add
