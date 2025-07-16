@@ -2,12 +2,12 @@ import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyCkucOMovZ8SicNFam-r4dAHjTlJGnmI7A",
-  authDomain: "mad-maceda-i.firebaseapp.com",
-  projectId: "mad-maceda-i",
-  storageBucket: "mad-maceda-i.firebasestorage.app",
-  messagingSenderId: "361243049000",
-  appId: "1:361243049000:web:662289de15e70d441f891d"
+  apiKey: "AIzaSyC9g7v9J6j5hvkq_hskn0Rvk2kM2CU8ApM",
+  authDomain: "carwashdetailing-efd04.firebaseapp.com",
+  projectId: "carwashdetailing-efd04",
+  storageBucket: "carwashdetailing-efd04.firebasestorage.app",
+  messagingSenderId: "431395218137",
+  appId: "1:431395218137:web:dcc01f28e2eb785e2414c8"
 };
 
 const app = initializeApp(firebaseConfig);
