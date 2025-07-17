@@ -1,13 +1,231 @@
 import React, { useEffect, useState, useRef } from "react";
 import {
   Box, Typography, Paper, Button, MenuItem, Select, Divider, Stack,
-  Card, CardContent, CircularProgress, Tooltip, IconButton
+  Card, CardContent, CircularProgress, Tooltip, IconButton,
+  useTheme, useMediaQuery, createTheme, ThemeProvider, CssBaseline,
+  Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
 } from "@mui/material";
-import { Assessment, GridOn, Download } from "@mui/icons-material";
+import { Assessment, GridOn, Download, Refresh as RefreshIcon } from "@mui/icons-material"; // Added RefreshIcon
 import AppSidebar from "./AppSidebar";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "../firebase/firebase";
 import { motion } from "framer-motion";
+import * as XLSX from "xlsx";
+
+// Custom Material-UI Theme for consistent styling
+const theme = createTheme({
+  typography: {
+    fontFamily: '"Inter", sans-serif',
+    h3: {
+      fontFamily: '"Poppins", sans-serif',
+      fontWeight: 800,
+      letterSpacing: 1.5,
+    },
+    h4: {
+      fontFamily: '"Poppins", sans-serif',
+      fontWeight: 800,
+      letterSpacing: 1.5,
+    },
+    h5: {
+      fontFamily: '"Poppins", sans-serif',
+      fontWeight: 700,
+      letterSpacing: 1.2,
+    },
+    h6: {
+      fontFamily: '"Poppins", sans-serif',
+      fontWeight: 600,
+    },
+    subtitle1: {
+      fontFamily: '"Inter", sans-serif',
+      fontWeight: 500,
+    },
+    subtitle2: {
+      fontFamily: '"Inter", sans-serif',
+      fontWeight: 500,
+    },
+    body1: {
+      fontFamily: '"Inter", sans-serif',
+    },
+    body2: {
+      fontFamily: '"Inter", sans-serif',
+    },
+    button: {
+      textTransform: 'none',
+    },
+  },
+  palette: {
+    primary: {
+      main: '#ef5350',
+      light: '#ff8a80',
+      dark: '#d32f2f',
+    },
+    secondary: {
+      main: '#424242',
+    },
+    background: {
+      default: '#f0f2f5',
+      paper: 'rgba(255,255,255,0.95)',
+    },
+    success: {
+      main: '#4CAF50',
+      light: '#81C784',
+      dark: '#2E7D32',
+    },
+    info: {
+      main: '#2196F3',
+      light: '#64B5F6',
+      dark: '#1976D2',
+    },
+    warning: {
+      main: '#FFC107',
+      light: '#FFD54F',
+      dark: '#FF8F00',
+    },
+    error: {
+      main: '#f44336',
+      light: '#e57373',
+      dark: '#d32f2f',
+    },
+  },
+  components: {
+    MuiPaper: {
+      styleOverrides: {
+        root: {
+          borderRadius: '24px',
+          boxShadow: '0 10px 30px rgba(0,0,0,0.08)',
+        },
+      },
+    },
+    MuiCard: {
+      styleOverrides: {
+        root: {
+          borderRadius: '16px',
+          boxShadow: '0 6px 20px rgba(0,0,0,0.08)',
+          transition: 'all 0.3s cubic-bezier(.25,.8,.25,1)',
+          '&:hover': {
+            boxShadow: '0 12px 35px rgba(0,0,0,0.15)',
+            transform: 'translateY(-5px)',
+          },
+        },
+      },
+    },
+    MuiButton: {
+      styleOverrides: {
+        root: {
+          borderRadius: '16px',
+          textTransform: 'none',
+          fontWeight: 700,
+          letterSpacing: 0.5,
+          boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+          '&:hover': {
+            boxShadow: '0 8px 20px rgba(0,0,0,0.15)',
+          },
+        },
+      },
+    },
+    MuiChip: {
+      styleOverrides: {
+        root: {
+          borderRadius: '12px',
+          fontWeight: 600,
+          transition: 'all 0.2s ease-in-out',
+          '&:hover': {
+            transform: 'translateY(-2px)',
+            boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
+          },
+        },
+      },
+    },
+    MuiTextField: {
+      styleOverrides: {
+        root: {
+          '& .MuiOutlinedInput-root': {
+            borderRadius: '12px',
+            backgroundColor: 'rgba(255,255,255,0.8)',
+            '& fieldset': {
+              borderColor: '#e0e0e0',
+              transition: 'border-color 0.3s ease-in-out',
+            },
+            '&:hover fieldset': {
+              borderColor: '#ffab91',
+            },
+            '&.Mui-focused fieldset': {
+              borderColor: '#ef5350',
+              borderWidth: '2px',
+            },
+          },
+          '& .MuiInputLabel-root': {
+            color: '#666',
+          },
+          '& .MuiInputLabel-root.Mui-focused': {
+            color: '#ef5350',
+          },
+        },
+      },
+    },
+    MuiSelect: {
+      styleOverrides: {
+        root: {
+          borderRadius: '12px',
+          backgroundColor: 'rgba(255,255,255,0.8)',
+          '& .MuiOutlinedInput-notchedOutline': {
+            borderColor: '#e0e0e0',
+          },
+          '&:hover .MuiOutlinedInput-notchedOutline': {
+            borderColor: '#ffab91',
+          },
+          '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+            borderColor: '#ef5350',
+            borderWidth: '2px',
+          },
+        },
+      },
+    },
+    MuiDialog: {
+      styleOverrides: {
+        paper: {
+          borderRadius: '24px',
+          boxShadow: '0 15px 45px rgba(0,0,0,0.15)',
+        },
+      },
+    },
+    MuiTableHead: {
+      styleOverrides: {
+        root: {
+          backgroundColor: '#f5f5f5', // Use a hardcoded color instead of theme.palette.grey[100]
+        },
+      },
+    },
+    MuiTableCell: {
+      styleOverrides: {
+        head: {
+          fontWeight: 700,
+          color: '#212121', // Use a hardcoded color instead of theme.palette.text.primary
+        },
+      },
+    },
+    MuiLinearProgress: {
+      styleOverrides: {
+        root: {
+          borderRadius: 4,
+          height: 8,
+          backgroundColor: '#eeeeee', // Use a hardcoded color instead of theme.palette.grey[200]
+        },
+        bar: {
+          borderRadius: 4,
+          backgroundColor: '#ef5350', // Use a hardcoded color instead of theme.palette.primary.main
+        },
+      },
+    },
+    MuiAvatar: {
+      styleOverrides: {
+        root: {
+          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+        },
+      },
+    },
+  },
+});
 
 const peso = (v: number) => `₱${v.toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
 
@@ -34,6 +252,9 @@ export default function ReportsAnalyticsPage(props: any) {
   const [loading, setLoading] = useState(true);
   const printRef = useRef<HTMLDivElement>(null);
 
+  const currentTheme = useTheme(); // Use useTheme hook
+  const isMobile = useMediaQuery(currentTheme.breakpoints.down('sm'));
+
   useEffect(() => {
     fetchAll();
   }, []);
@@ -51,6 +272,7 @@ export default function ReportsAnalyticsPage(props: any) {
       setChemicals(chemicalsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     } catch (error) {
       console.error("Error fetching data:", error);
+      // In a real app, you might show a Snackbar here
     } finally {
       setLoading(false);
     }
@@ -62,8 +284,8 @@ export default function ReportsAnalyticsPage(props: any) {
 
   // Process data for reports
   const processReportData = (): ReportData => {
-    const paidPayments = payments.filter(p => p.paid);
-    
+    const paidPayments = payments.filter(p => p.paid && !p.voided); // Exclude voided from reports
+
     // Sales by month
     const salesByMonth: { [month: string]: number } = {};
     paidPayments.forEach(p => {
@@ -85,9 +307,12 @@ export default function ReportsAnalyticsPage(props: any) {
     paidPayments.forEach(p => {
       const service = services.find((s: any) => s.id === p.serviceId);
       if (service && service.chemicals) {
+        // Assuming service.chemicals is an object where keys are chemical IDs
+        // and values are objects containing 'name' and 'usage' (which has varieties)
         Object.entries(service.chemicals).forEach(([chemId, chem]) => {
           const c = chem as { usage?: { [variety: string]: number }; name: string };
-          const usage = c.usage?.[p.variety] || 0;
+          // Ensure p.variety exists and matches a key in c.usage
+          const usage = (c.usage && p.variety && c.usage[p.variety]) ? c.usage[p.variety] : 0;
           const chemName = c.name;
           chemicalUsage[chemName] = (chemicalUsage[chemName] || 0) + usage;
         });
@@ -101,10 +326,8 @@ export default function ReportsAnalyticsPage(props: any) {
 
   const chartTitle = REPORT_TYPES.find(t => t.key === reportType)?.label || "Report";
 
-  // Generate Excel report (dynamic import)
+  // Generate Excel report
   const generateExcel = async () => {
-    // @ts-ignore
-    const XLSX = await import("xlsx");
     const wb = XLSX.utils.book_new();
     let data: any[][] = [];
     let headers: string[] = [];
@@ -136,15 +359,15 @@ export default function ReportsAnalyticsPage(props: any) {
         <head>
           <title>${SHOP_NAME} - ${chartTitle}</title>
           <style>
-            body { font-family: Arial, sans-serif; margin: 40px; }
-            .header { text-align: center; margin-bottom: 20px; }
-            .shop-title { font-size: 24px; font-weight: bold; margin-bottom: 5px; }
-            .report-title { font-size: 18px; margin-bottom: 5px; }
-            .generated { font-size: 14px; color: #555; margin-bottom: 15px; }
-            table { border-collapse: collapse; width: 100%; margin-top: 20px; }
-            th, td { border: 1px solid #ddd; padding: 10px 12px; text-align: left; }
-            th { background-color: #2980b9; color: white; font-weight: bold; }
-            tr:nth-child(even) { background-color: #f5f5f5; }
+            body { font-family: "Inter", sans-serif; margin: 40px; color: #333; }
+            .header { text-align: center; margin-bottom: 30px; }
+            .shop-title { font-size: 28px; font-weight: bold; margin-bottom: 8px; color: ${currentTheme.palette.primary.dark}; }
+            .report-title { font-size: 22px; font-weight: 600; margin-bottom: 5px; color: ${currentTheme.palette.secondary.main}; }
+            .generated { font-size: 14px; color: #777; margin-bottom: 15px; }
+            table { border-collapse: collapse; width: 100%; margin-top: 20px; border-radius: 8px; overflow: hidden; }
+            th, td { border: 1px solid #e0e0e0; padding: 12px 15px; text-align: left; }
+            th { background-color: ${currentTheme.palette.primary.main}; color: white; font-weight: bold; }
+            tr:nth-child(even) { background-color: #f8f8f8; }
             .footer { margin-top: 30px; text-align: right; font-size: 14px; color: #888; }
           </style>
         </head>
@@ -164,350 +387,363 @@ export default function ReportsAnalyticsPage(props: any) {
   };
 
   function getPrintableTable() {
+    let tableContent = '';
     if (reportType === "sales") {
-      return `
-        <table>
-          <thead>
-            <tr><th>Month</th><th>Sales</th></tr>
-          </thead>
-          <tbody>
-            ${Object.entries(salesByMonth)
-              .map(([month, sales]) => `<tr><td>${month}</td><td>${peso(sales)}</td></tr>`)
-              .join("")}
-          </tbody>
-        </table>
+      tableContent = `
+        <thead>
+          <tr><th>Month</th><th>Sales</th></tr>
+        </thead>
+        <tbody>
+          ${Object.entries(salesByMonth)
+            .map(([month, sales]) => `<tr><td>${month}</td><td>${peso(sales)}</td></tr>`)
+            .join("")}
+        </tbody>
+      `;
+    } else if (reportType === "services") {
+      tableContent = `
+        <thead>
+          <tr><th>Service</th><th>Times Availed</th></tr>
+        </thead>
+        <tbody>
+          ${Object.entries(serviceCount)
+            .map(([service, count]) => `<tr><td>${service}</td><td>${count}</td></tr>`)
+            .join("")}
+        </tbody>
+      `;
+    } else if (reportType === "chemicals") {
+      tableContent = `
+        <thead>
+          <tr><th>Chemical</th><th>Total Usage (ml)</th></tr>
+        </thead>
+        <tbody>
+          ${Object.entries(chemicalUsage)
+            .map(([chem, usage]) => `<tr><td>${chem}</td><td>${usage}</td></tr>`)
+            .join("")}
+        </tbody>
       `;
     }
-    if (reportType === "services") {
-      return `
-        <table>
-          <thead>
-            <tr><th>Service</th><th>Times Availed</th></tr>
-          </thead>
-          <tbody>
-            ${Object.entries(serviceCount)
-              .map(([service, count]) => `<tr><td>${service}</td><td>${count}</td></tr>`)
-              .join("")}
-          </tbody>
-        </table>
-      `;
-    }
-    if (reportType === "chemicals") {
-      return `
-        <table>
-          <thead>
-            <tr><th>Chemical</th><th>Total Usage (ml)</th></tr>
-          </thead>
-          <tbody>
-            ${Object.entries(chemicalUsage)
-              .map(([chem, usage]) => `<tr><td>${chem}</td><td>${usage}</td></tr>`)
-              .join("")}
-          </tbody>
-        </table>
-      `;
-    }
-    return "";
+    return `<table style="width: 100%; border-collapse: collapse;">${tableContent}</table>`;
   }
 
+  // Framer Motion variants
+  const headerVariants = {
+    hidden: { opacity: 0, y: -20 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" as const } },
+  };
+
+  const contentVariants = {
+    hidden: { opacity: 0, scale: 0.98 },
+    visible: { opacity: 1, scale: 1, transition: { duration: 0.6, ease: "easeOut" as const, delay: 0.2 } },
+  };
+
   return (
-    <AppSidebar
-      role="admin"
-      onLogout={onLogout}
-      onProfile={onProfile}
-      firstName={firstName}
-      lastName={lastName}
-    >
-      <Box sx={{ maxWidth: 1200, mx: "auto", p: { xs: 2, sm: 3 } }}>
-        {/* Header Section */}
-        <Paper 
-          component={motion.div}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          sx={{ 
-            p: 3, 
-            mb: 3, 
-            borderRadius: 3,
-            background: 'linear-gradient(135deg, #f5f7fa 0%, #e4e8eb 100%)'
-          }}
-        >
-          {/* Replace Grid with Box/Stack for layout */}
-          <Box
-            sx={{
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <AppSidebar
+        role="admin"
+        onLogout={onLogout}
+        onProfile={onProfile}
+        firstName={firstName}
+        lastName={lastName}
+      >
+        <Box sx={{ maxWidth: 1200, mx: "auto", p: { xs: 2, sm: 3, md: 4 } }}>
+          {/* Header Section */}
+          <Paper 
+            component={motion.div}
+            initial="hidden"
+            animate="visible"
+            variants={headerVariants}
+            elevation={4}
+            sx={{ 
+              p: { xs: 2.5, sm: 4 }, // Increased padding
+              mb: 4, 
+              borderRadius: 4,
+              background: `linear-gradient(135deg, ${currentTheme.palette.info.light} 0%, ${currentTheme.palette.info.main} 100%)`, // Info gradient
+              color: currentTheme.palette.info.contrastText, // White text
+              boxShadow: currentTheme.shadows[6], // Stronger shadow
               display: "flex",
-              flexDirection: { xs: "column", md: "row" },
-              alignItems: { xs: "flex-start", md: "center" },
-              gap: 2
+              flexDirection: { xs: "column", sm: "row" },
+              alignItems: { xs: "flex-start", sm: "center" },
+              justifyContent: "space-between",
+              gap: 2,
             }}
           >
             <Box sx={{ flex: 1 }}>
-              <Typography variant="h4" fontWeight={700} sx={{ display: 'flex', alignItems: 'center' }}>
-                <Assessment sx={{ mr: 1.5, fontSize: 32 }} />
+              <Typography variant={isMobile ? "h5" : "h3"} fontWeight={700} sx={{ display: 'flex', alignItems: 'center' }} gutterBottom>
+                <Assessment sx={{ mr: 1.5, fontSize: isMobile ? 30 : 40 }} />
                 Reports & Analytics
               </Typography>
-              <Typography variant="body1" color="text.secondary" sx={{ mt: 1 }}>
-                Generate detailed reports for business insights
+              <Typography variant="body1" sx={{ opacity: 0.9 }}>
+                Generate detailed reports for business insights.
               </Typography>
             </Box>
-            <Box
-              sx={{
-                flex: 1,
-                display: "flex",
-                justifyContent: { xs: "flex-start", md: "flex-end" },
-                alignItems: "center"
-              }}
-            >
-              <Stack direction="row" spacing={2} alignItems="center">
-                <Select
-                  value={reportType}
-                  onChange={(e) => setReportType(e.target.value as any)}
-                  size="small"
-                  sx={{ minWidth: 200, background: 'white' }}
-                >
-                  {REPORT_TYPES.map(t => (
-                    <MenuItem key={t.key} value={t.key} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <span>{t.icon}</span>
-                      {t.label}
-                    </MenuItem>
-                  ))}
-                </Select>
-                <Button
-                  variant="contained"
-                  color="primary"
-                  startIcon={<Download />}
-                  onClick={handlePrint}
-                  sx={{ textTransform: 'none' }}
-                >
-                  Print
-                </Button>
-              </Stack>
-            </Box>
-          </Box>
-        </Paper>
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={2} alignItems="center" sx={{ width: { xs: '100%', sm: 'auto' } }}>
+              <Select
+                value={reportType}
+                onChange={(e) => setReportType(e.target.value as any)}
+                size="medium" // Medium size for consistency
+                variant="outlined" // Outlined variant
+                sx={{ 
+                  minWidth: 200, 
+                  background: currentTheme.palette.background.paper, // Use paper background
+                  borderRadius: 2, // Consistent rounded corners
+                  color: currentTheme.palette.text.primary,
+                  '& .MuiOutlinedInput-notchedOutline': {
+                    borderColor: currentTheme.palette.grey[300],
+                  },
+                  '&:hover .MuiOutlinedInput-notchedOutline': {
+                    borderColor: currentTheme.palette.primary.light,
+                  },
+                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                    borderColor: currentTheme.palette.primary.main,
+                  },
+                }}
+              >
+                {REPORT_TYPES.map(t => (
+                  <MenuItem key={t.key} value={t.key} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <span>{t.icon}</span>
+                    {t.label}
+                  </MenuItem>
+                ))}
+              </Select>
+              <Button
+                variant="contained"
+                color="secondary" // Secondary color for contrast
+                startIcon={<Download />}
+                onClick={handlePrint}
+                sx={{ 
+                  textTransform: 'none', 
+                  py: 1.5, // Increased padding
+                  px: 3,
+                  borderRadius: 2.5, // More rounded
+                  boxShadow: currentTheme.shadows[3],
+                  "&:hover": {
+                    boxShadow: currentTheme.shadows[6],
+                    transform: "translateY(-2px)",
+                  },
+                }}
+              >
+                Print Report
+              </Button>
+            </Stack>
+          </Paper>
 
-        {/* Export Buttons */}
-        <Box sx={{ mb: 3, display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
-          <Tooltip title="Export to Excel">
-            <IconButton
-              onClick={generateExcel}
-              color="success"
-              sx={{ 
-                bgcolor: 'success.light', 
-                '&:hover': { bgcolor: 'success.main', color: 'white' } 
-              }}
-            >
-              <GridOn />
-            </IconButton>
-          </Tooltip>
-        </Box>
-
-        {/* Report Content */}
-        <Box ref={printRef}>
-          <Card 
-            component={motion.div}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.1 }}
-            sx={{ 
-              borderRadius: 3,
-              boxShadow: 3,
-              mb: 3
-            }}
+          {/* Export Button */}
+          <motion.div
+            initial="hidden"
+            animate="visible"
+            variants={headerVariants} // Using headerVariants for this too
+            style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: currentTheme.spacing(3) }}
           >
-            <CardContent sx={{ p: 4 }}>
-              {/* Report Header */}
-              <Box sx={{ textAlign: "center", mb: 3 }}>
-                <Typography variant="h4" fontWeight={700} color="primary" gutterBottom>
-                  {SHOP_NAME}
-                </Typography>
-                <Typography variant="h5" fontWeight={600}>
-                  {chartTitle}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Generated: {generatedDate}
-                </Typography>
-              </Box>
-              
-              <Divider sx={{ mb: 3 }} />
+            <Tooltip title="Export to Excel">
+              <IconButton
+                onClick={generateExcel}
+                color="success"
+                sx={{ 
+                  bgcolor: currentTheme.palette.success.light, 
+                  color: currentTheme.palette.success.dark,
+                  p: 1.5, // Larger touch target
+                  borderRadius: '50%', // Circular button
+                  boxShadow: currentTheme.shadows[2],
+                  transition: 'all 0.3s ease-in-out',
+                  '&:hover': { 
+                    bgcolor: currentTheme.palette.success.main, 
+                    color: currentTheme.palette.common.white,
+                    boxShadow: currentTheme.shadows[4],
+                    transform: 'scale(1.05)',
+                  },
+                  '&:disabled': {
+                    opacity: 0.7,
+                    cursor: 'not-allowed',
+                  }
+                }}
+                disabled={loading} // Disable if data is loading
+              >
+                <GridOn sx={{ fontSize: 28 }} />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Refresh Data">
+              <IconButton
+                onClick={fetchAll}
+                color="primary"
+                sx={{ 
+                  ml: 2, // Margin to separate from Excel button
+                  bgcolor: currentTheme.palette.primary.light, 
+                  color: currentTheme.palette.primary.dark,
+                  p: 1.5, 
+                  borderRadius: '50%', 
+                  boxShadow: currentTheme.shadows[2],
+                  transition: 'all 0.3s ease-in-out',
+                  '&:hover': { 
+                    bgcolor: currentTheme.palette.primary.main, 
+                    color: currentTheme.palette.common.white,
+                    boxShadow: currentTheme.shadows[4],
+                    transform: 'scale(1.05)',
+                  },
+                  '&:disabled': {
+                    opacity: 0.7,
+                    cursor: 'not-allowed',
+                  }
+                }}
+                disabled={loading}
+              >
+                {loading ? <CircularProgress size={20} color="inherit" /> : <RefreshIcon sx={{ fontSize: 28 }} />}
+              </IconButton>
+            </Tooltip>
+          </motion.div>
 
-              {/* Report Content */}
-              {loading ? (
-                <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-                  <CircularProgress />
+          {/* Report Content */}
+          <Box ref={printRef}>
+            {/* Use motion(Card) for animation */}
+            {/*
+              You need to import motion from framer-motion:
+              import { motion } from "framer-motion";
+            */}
+            <motion.div
+              initial="hidden"
+              animate="visible"
+              variants={contentVariants}
+            >
+              <Card
+                elevation={4} // Stronger shadow
+                sx={{
+                  borderRadius: 3,
+                  boxShadow: currentTheme.shadows[4], // Consistent shadow
+                  mb: 3,
+                  bgcolor: "background.paper",
+                  p: { xs: 2, sm: 4 }, // Responsive padding
+                }}
+              >
+              <CardContent sx={{ p: 0 }}> {/* Remove default CardContent padding */}
+                {/* Report Header (inside printable area) */}
+                <Box sx={{ textAlign: "center", mb: 3 }}>
+                  <Typography variant="h4" fontWeight={700} color="primary" gutterBottom>
+                    {SHOP_NAME}
+                  </Typography>
+                  <Typography variant="h5" fontWeight={600} color="secondary">
+                    {chartTitle}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                    Generated: {generatedDate}
+                  </Typography>
                 </Box>
-              ) : (
-                <>
-                  {reportType === "sales" && (
-                    <Box>
-                      <Typography variant="h6" fontWeight={600} sx={{ mb: 2 }}>
-                        Monthly Sales Report
-                      </Typography>
-                      <Box sx={{ overflowX: 'auto' }}>
-                        <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                          <thead>
-                            <tr>
-                              <th style={{ 
-                                border: "1px solid #ddd", 
-                                padding: 12,
-                                backgroundColor: '#2980b9',
-                                color: 'white',
-                                textAlign: 'left'
-                              }}>
-                                Month
-                              </th>
-                              <th style={{ 
-                                border: "1px solid #ddd", 
-                                padding: 12,
-                                backgroundColor: '#2980b9',
-                                color: 'white',
-                                textAlign: 'left'
-                              }}>
-                                Sales
-                              </th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {Object.entries(salesByMonth).map(([month, sales]) => (
-                              <tr key={month} style={{ backgroundColor: '#fff' }}>
-                                <td style={{ 
-                                  border: "1px solid #ddd", 
-                                  padding: 12,
-                                  textAlign: 'left'
-                                }}>
-                                  {month}
-                                </td>
-                                <td style={{ 
-                                  border: "1px solid #ddd", 
-                                  padding: 12,
-                                  textAlign: 'left'
-                                }}>
-                                  {peso(sales)}
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </Box>
-                    </Box>
-                  )}
+                
+                <Divider sx={{ mb: 3 }} />
 
-                  {reportType === "services" && (
-                    <Box>
-                      <Typography variant="h6" fontWeight={600} sx={{ mb: 2 }}>
-                        Services Availed Report
-                      </Typography>
-                      <Box sx={{ overflowX: 'auto' }}>
-                        <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                          <thead>
-                            <tr>
-                              <th style={{ 
-                                border: "1px solid #ddd", 
-                                padding: 12,
-                                backgroundColor: '#2980b9',
-                                color: 'white',
-                                textAlign: 'left'
-                              }}>
-                                Service
-                              </th>
-                              <th style={{ 
-                                border: "1px solid #ddd", 
-                                padding: 12,
-                                backgroundColor: '#2980b9',
-                                color: 'white',
-                                textAlign: 'left'
-                              }}>
-                                Times Availed
-                              </th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {Object.entries(serviceCount).map(([service, count]) => (
-                              <tr key={service} style={{ backgroundColor: '#fff' }}>
-                                <td style={{ 
-                                  border: "1px solid #ddd", 
-                                  padding: 12,
-                                  textAlign: 'left'
-                                }}>
-                                  {service}
-                                </td>
-                                <td style={{ 
-                                  border: "1px solid #ddd", 
-                                  padding: 12,
-                                  textAlign: 'left'
-                                }}>
-                                  {count}
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
+                {/* Report Content Tables */}
+                {loading ? (
+                  <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+                    <CircularProgress color="primary" />
+                    <Typography sx={{ mt: 2, ml: 2, color: "text.secondary" }}>Loading Report Data...</Typography>
+                  </Box>
+                ) : (
+                  <>
+                    {reportType === "sales" && (
+                      <Box>
+                        <Typography variant="h6" fontWeight={600} sx={{ mb: 2 }}>
+                          Monthly Sales Report
+                        </Typography>
+                        <TableContainer component={Paper} elevation={1} sx={{ borderRadius: 2, overflowX: 'auto' }}>
+                          <Table size={isMobile ? "small" : "medium"}>
+                            <TableHead>
+                              <TableRow sx={{ bgcolor: currentTheme.palette.grey[100] }}>
+                                <TableCell sx={{ fontWeight: 700, fontSize: '1rem' }}>Month</TableCell>
+                                <TableCell sx={{ fontWeight: 700, fontSize: '1rem' }}>Sales</TableCell>
+                              </TableRow>
+                            </TableHead>
+                            <TableBody>
+                              {Object.entries(salesByMonth).length === 0 ? (
+                                <TableRow>
+                                  <TableCell colSpan={2} align="center" sx={{ py: 3, fontStyle: 'italic', color: 'text.secondary' }}>No sales data available.</TableCell>
+                                </TableRow>
+                              ) : (
+                                Object.entries(salesByMonth).map(([month, sales]) => (
+                                  <TableRow key={month} hover>
+                                    <TableCell>{month}</TableCell>
+                                    <TableCell>{peso(sales)}</TableCell>
+                                  </TableRow>
+                                ))
+                              )}
+                            </TableBody>
+                          </Table>
+                        </TableContainer>
                       </Box>
-                    </Box>
-                  )}
+                    )}
 
-                  {reportType === "chemicals" && (
-                    <Box>
-                      <Typography variant="h6" fontWeight={600} sx={{ mb: 2 }}>
-                        Chemicals Usage Report
-                      </Typography>
-                      <Box sx={{ overflowX: 'auto' }}>
-                        <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                          <thead>
-                            <tr>
-                              <th style={{ 
-                                border: "1px solid #ddd", 
-                                padding: 12,
-                                backgroundColor: '#2980b9',
-                                color: 'white',
-                                textAlign: 'left'
-                              }}>
-                                Chemical
-                              </th>
-                              <th style={{ 
-                                border: "1px solid #ddd", 
-                                padding: 12,
-                                backgroundColor: '#2980b9',
-                                color: 'white',
-                                textAlign: 'left'
-                              }}>
-                                Total Usage (ml)
-                              </th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {Object.entries(chemicalUsage).map(([chem, usage]) => (
-                              <tr key={chem} style={{ backgroundColor: '#fff' }}>
-                                <td style={{ 
-                                  border: "1px solid #ddd", 
-                                  padding: 12,
-                                  textAlign: 'left'
-                                }}>
-                                  {chem}
-                                </td>
-                                <td style={{ 
-                                  border: "1px solid #ddd", 
-                                  padding: 12,
-                                  textAlign: 'left'
-                                }}>
-                                  {usage}
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
+                    {reportType === "services" && (
+                      <Box>
+                        <Typography variant="h6" fontWeight={600} sx={{ mb: 2 }}>
+                          Services Availed Report
+                        </Typography>
+                        <TableContainer component={Paper} elevation={1} sx={{ borderRadius: 2, overflowX: 'auto' }}>
+                          <Table size={isMobile ? "small" : "medium"}>
+                            <TableHead>
+                              <TableRow sx={{ bgcolor: currentTheme.palette.grey[100] }}>
+                                <TableCell sx={{ fontWeight: 700, fontSize: '1rem' }}>Service</TableCell>
+                                <TableCell sx={{ fontWeight: 700, fontSize: '1rem' }}>Times Availed</TableCell>
+                              </TableRow>
+                            </TableHead>
+                            <TableBody>
+                              {Object.entries(serviceCount).length === 0 ? (
+                                <TableRow>
+                                  <TableCell colSpan={2} align="center" sx={{ py: 3, fontStyle: 'italic', color: 'text.secondary' }}>No service availed data available.</TableCell>
+                                </TableRow>
+                              ) : (
+                                Object.entries(serviceCount).map(([service, count]) => (
+                                  <TableRow key={service} hover>
+                                    <TableCell>{service}</TableCell>
+                                    <TableCell>{count}</TableCell>
+                                  </TableRow>
+                                ))
+                              )}
+                            </TableBody>
+                          </Table>
+                        </TableContainer>
                       </Box>
-                    </Box>
-                  )}
-                </>
-              )}
+                    )}
 
-              <Divider sx={{ mt: 3, mb: 2 }} />
-              <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'right' }}>
-                Page 1
-              </Typography>
-            </CardContent>
-          </Card>
+                    {reportType === "chemicals" && (
+                      <Box>
+                        <Typography variant="h6" fontWeight={600} sx={{ mb: 2 }}>
+                          Chemicals Usage Report
+                        </Typography>
+                        <TableContainer component={Paper} elevation={1} sx={{ borderRadius: 2, overflowX: 'auto' }}>
+                          <Table size={isMobile ? "small" : "medium"}>
+                            <TableHead>
+                              <TableRow sx={{ bgcolor: currentTheme.palette.grey[100] }}>
+                                <TableCell sx={{ fontWeight: 700, fontSize: '1rem' }}>Chemical</TableCell>
+                                <TableCell sx={{ fontWeight: 700, fontSize: '1rem' }}>Total Usage (ml)</TableCell>
+                              </TableRow>
+                            </TableHead>
+                            <TableBody>
+                              {Object.entries(chemicalUsage).length === 0 ? (
+                                <TableRow>
+                                  <TableCell colSpan={2} align="center" sx={{ py: 3, fontStyle: 'italic', color: 'text.secondary' }}>No chemical usage data available.</TableCell>
+                                </TableRow>
+                              ) : (
+                                Object.entries(chemicalUsage).map(([chem, usage]) => (
+                                  <TableRow key={chem} hover>
+                                    <TableCell>{chem}</TableCell>
+                                    <TableCell>{usage}</TableCell>
+                                  </TableRow>
+                                ))
+                              )}
+                            </TableBody>
+                          </Table>
+                        </TableContainer>
+                      </Box>
+                    )}
+                  </>
+                )}
+              </CardContent>
+              </Card>
+            </motion.div>
+            <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'right' }}>
+              Page 1
+            </Typography>
+          </Box>
         </Box>
-      </Box>
-    </AppSidebar>
+      </AppSidebar>
+    </ThemeProvider>
   );
 }

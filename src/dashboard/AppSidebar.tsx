@@ -15,7 +15,9 @@ import {
   Avatar,
   Tooltip,
   useMediaQuery,
-  useTheme
+  useTheme,
+  AppBar, // Added AppBar for mobile
+  Toolbar // Added Toolbar for mobile
 } from "@mui/material";
 import {
   Menu as MenuIcon,
@@ -32,13 +34,13 @@ import {
   Group as GroupIcon,
   Build as BuildIcon,
   Payment as PaymentIcon,
-  MonetizationOn as MonetizationOnIcon
+  MonetizationOn as MonetizationOnIcon,
 } from "@mui/icons-material";
 import logo from '../assets/logos/carwash-logo.png';
 import { useNavigate } from "react-router-dom";
 
-const drawerWidth = 240;
-const collapsedWidth = 64;
+const drawerWidth = 260; // Slightly wider for better spacing
+const collapsedWidth = 72; // Slightly wider for icon visibility
 
 interface AppSidebarProps {
   role: "admin" | "cashier";
@@ -88,25 +90,26 @@ const cashierMenu = [
 
 const SIDEBAR_PREF_KEY = "sidebarOpen";
 
-const AppSidebar: React.FC<AppSidebarProps> = ({ 
-  role, 
-  firstName: propFirstName = '', 
-  lastName: propLastName = '', 
-  onLogout, 
-  onProfile, 
-  children 
+const AppSidebar: React.FC<AppSidebarProps> = ({
+  role,
+  firstName: propFirstName = '',
+  lastName: propLastName = '',
+  onLogout,
+  onProfile,
+  children
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [open, setOpen] = useState(() => {
+    // Default to open on desktop, closed on mobile
     const pref = localStorage.getItem(SIDEBAR_PREF_KEY);
-    return pref === null ? true : pref === "true";
+    return isMobile ? false : (pref === null ? true : pref === "true");
   });
   const [userMenuAnchor, setUserMenuAnchor] = useState<null | HTMLElement>(null);
   const navigate = useNavigate();
   const [activeItem, setActiveItem] = useState("");
 
-  const [userInfo, setUserInfo] = useState<{firstName: string, lastName: string}>({
+  const [userInfo, setUserInfo] = useState<{ firstName: string, lastName: string }>({
     firstName: propFirstName,
     lastName: propLastName
   });
@@ -126,7 +129,7 @@ const AppSidebar: React.FC<AppSidebarProps> = ({
     } else {
       setUserInfo({ firstName: propFirstName, lastName: propLastName });
     }
-    
+
     // Set active item based on current path
     const currentPath = window.location.pathname;
     const allMenuItems = [...adminMenu, ...cashierMenu].flatMap(section => section.items);
@@ -137,15 +140,27 @@ const AppSidebar: React.FC<AppSidebarProps> = ({
   }, [propFirstName, propLastName, role]);
 
   useEffect(() => {
-    localStorage.setItem(SIDEBAR_PREF_KEY, String(open));
-  }, [open]);
+    // Only save preference if not on mobile
+    if (!isMobile) {
+      localStorage.setItem(SIDEBAR_PREF_KEY, String(open));
+    }
+  }, [open, isMobile]);
 
-  // Auto-close sidebar on mobile when clicking a menu item
+  // Handle sidebar behavior based on mobile state
+  useEffect(() => {
+    if (isMobile) {
+      setOpen(false); // Always start closed on mobile
+    } else {
+      const pref = localStorage.getItem(SIDEBAR_PREF_KEY);
+      setOpen(pref === null ? true : pref === "true"); // Respect preference on desktop
+    }
+  }, [isMobile]);
+
   const handleMenuClick = (item: { text: string; path: string }) => {
     setActiveItem(item.text);
     navigate(item.path);
     if (isMobile) {
-      setOpen(false);
+      setOpen(false); // Close sidebar on mobile after navigation
     }
   };
 
@@ -158,17 +173,17 @@ const AppSidebar: React.FC<AppSidebarProps> = ({
     setUserMenuAnchor(event.currentTarget);
   };
 
-  const handleCloseMenu = () => {
+  const handleCloseUserMenu = () => {
     setUserMenuAnchor(null);
   };
 
   const handleProfileClick = () => {
-    handleCloseMenu();
+    handleCloseUserMenu();
     if (onProfile) onProfile();
   };
 
   const handleLogoutClick = () => {
-    handleCloseMenu();
+    handleCloseUserMenu();
     if (onLogout) onLogout();
   };
 
@@ -179,7 +194,54 @@ const AppSidebar: React.FC<AppSidebarProps> = ({
   return (
     <Box sx={{ display: "flex", width: "100%", minHeight: "100vh" }}>
       <CssBaseline />
-      
+
+      {/* Mobile AppBar with Menu Button */}
+      {isMobile && (
+        <AppBar
+          position="fixed"
+          sx={{
+            width: '100%',
+            zIndex: theme.zIndex.drawer + 1,
+            backgroundColor: theme.palette.background.paper,
+            boxShadow: theme.shadows[1],
+            height: 64, // Standard app bar height
+            display: 'flex',
+            justifyContent: 'center',
+          }}
+        >
+          <Toolbar>
+            <IconButton
+              color="inherit"
+              aria-label="open drawer"
+              onClick={toggleSidebar}
+              edge="start"
+              sx={{ mr: 2, color: "text.primary" }}
+            >
+              <MenuIcon />
+            </IconButton>
+            <Box
+              component="img"
+              src={logo}
+              alt="Logo"
+              sx={{
+                height: 36,
+                mr: 1,
+                objectFit: "contain",
+              }}
+            />
+            <Typography variant="h6" noWrap component="div"
+              sx={{
+                fontWeight: 700,
+                color: "primary.main",
+                letterSpacing: 1,
+                whiteSpace: "nowrap"
+              }}>
+              MAD
+            </Typography>
+          </Toolbar>
+        </AppBar>
+      )}
+
       {/* Sidebar Drawer */}
       <Drawer
         variant={isMobile ? "temporary" : "permanent"}
@@ -195,11 +257,14 @@ const AppSidebar: React.FC<AppSidebarProps> = ({
               easing: theme.transitions.easing.sharp,
               duration: theme.transitions.duration.enteringScreen,
             }),
-            background: "#fff",
-            borderRight: "1px solid rgba(0, 0, 0, 0.12)",
+            background: theme.palette.background.paper, // Use theme background
+            borderRight: `1px solid ${theme.palette.divider}`, // Use theme divider
             display: "flex",
             flexDirection: "column",
             boxSizing: "border-box",
+            boxShadow: isMobile ? theme.shadows[4] : 'none', // Add shadow for temporary drawer
+            top: isMobile ? 64 : 0, // Position below app bar on mobile
+            height: isMobile ? 'calc(100% - 64px)' : '100vh', // Adjust height on mobile
           },
         }}
         ModalProps={{
@@ -207,73 +272,92 @@ const AppSidebar: React.FC<AppSidebarProps> = ({
         }}
       >
         {/* Logo Section */}
-        <Box
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: open ? "flex-start" : "center",
-            p: open ? "20px 24px 12px 24px" : "20px 12px 12px 12px",
-            borderBottom: "1px solid rgba(0, 0, 0, 0.12)",
-            minHeight: 72
-          }}
-        >
+        {!isMobile && ( // Hide logo section when mobile app bar is present
           <Box
-            component="img"
-            src={logo}
-            alt="Logo"
             sx={{
-              height: 40,
-              width: open ? "auto" : 40,
-              borderRadius: 1,
-              objectFit: "contain",
-              transition: "width 0.3s"
+              display: "flex",
+              alignItems: "center",
+              justifyContent: open ? "flex-start" : "center",
+              p: open ? "20px 24px 12px 24px" : "20px 12px 12px 12px",
+              borderBottom: `1px solid ${theme.palette.divider}`,
+              minHeight: 72,
+              animation: open ? 'fadeIn 0.5s ease-out' : 'fadeOut 0.3s ease-in',
+              '@keyframes fadeIn': {
+                'from': { opacity: 0 },
+                'to': { opacity: 1 },
+              },
+              '@keyframes fadeOut': {
+                'from': { opacity: 1 },
+                'to': { opacity: 0 },
+              }
             }}
-          />
-          {open && (
-            <Typography variant="h6" sx={{ 
-              ml: 2, 
-              fontWeight: 700, 
-              color: "primary.main", 
-              letterSpacing: 1,
-              whiteSpace: "nowrap"
-            }}>
-              MAD
-            </Typography>
-          )}
-        </Box>
+          >
+            <Box
+              component="img"
+              src={logo}
+              alt="Logo"
+              sx={{
+                height: 40,
+                width: open ? "auto" : 40,
+                borderRadius: 1,
+                objectFit: "contain",
+                transition: "width 0.3s ease-in-out"
+              }}
+            />
+            {open && (
+              <Typography variant="h6" sx={{
+                ml: 2,
+                fontWeight: 700,
+                color: "primary.main",
+                letterSpacing: 1,
+                whiteSpace: "nowrap",
+                opacity: 0, // Start with 0 opacity for animation
+                animation: 'slideIn 0.4s forwards',
+                animationDelay: '0.1s',
+                '@keyframes slideIn': {
+                  'from': { transform: 'translateX(-20px)', opacity: 0 },
+                  'to': { transform: 'translateX(0)', opacity: 1 },
+                },
+              }}>
+                MAD
+              </Typography>
+            )}
+          </Box>
+        )}
 
         {/* Main Menu */}
-        <Box sx={{ 
-          flexGrow: 1, 
-          overflowY: "auto", 
+        <Box sx={{
+          flexGrow: 1,
+          overflowY: "auto",
           pt: 1,
           '&::-webkit-scrollbar': {
             width: '6px',
           },
           '&::-webkit-scrollbar-track': {
-            background: '#f1f1f1',
+            background: theme.palette.action.hover, // Use theme for scrollbar track
           },
           '&::-webkit-scrollbar-thumb': {
-            background: '#888',
+            background: theme.palette.grey[500], // Use theme for scrollbar thumb
             borderRadius: '3px',
           },
           '&::-webkit-scrollbar-thumb:hover': {
-            background: '#555',
+            background: theme.palette.grey[700], // Use theme for scrollbar thumb hover
           }
         }}>
           {menu.map((section, idx) => (
-            <Box key={`${section.section}-${idx}`}>
+            <Box key={`${section.section}-${idx}`} sx={{ my: 1 }}>
               {open && (
                 <Typography
                   variant="caption"
                   sx={{
-                    color: "text.secondary",
+                    color: theme.palette.text.secondary,
                     fontWeight: 700,
                     letterSpacing: 1,
                     pl: 3,
-                    pt: idx === 0 ? 0 : 2,
                     pb: 0.5,
-                    display: "block"
+                    display: "block",
+                    textTransform: 'uppercase', // Make section titles uppercase
+                    animation: 'fadeIn 0.5s ease-out',
                   }}
                 >
                   {section.section}
@@ -281,34 +365,46 @@ const AppSidebar: React.FC<AppSidebarProps> = ({
               )}
               <List sx={{ py: 0 }}>
                 {section.items.map((item) => (
-                  <Tooltip 
-                    key={item.text} 
-                    title={!open ? item.text : ""} 
+                  <Tooltip
+                    key={item.text}
+                    title={!open ? item.text : ""}
                     placement="right"
                     arrow
+                    sx={{ [`& .MuiTooltip-tooltip`]: { fontSize: 13 } }}
                   >
                     <ListItemButton
                       sx={{
-                        minHeight: 44,
+                        minHeight: 48, // Slightly taller for better touch targets
                         justifyContent: open ? 'initial' : 'center',
                         px: open ? 3 : 1.5,
-                        borderRadius: 1,
+                        borderRadius: 2, // More rounded corners
                         my: 0.5,
                         mx: 1,
-                        transition: "all 0.2s",
-                        backgroundColor: activeItem === item.text ? "primary.light" : "transparent",
+                        transition: "all 0.2s ease-in-out", // Smooth transition for all properties
+                        backgroundColor: activeItem === item.text ? theme.palette.primary.light : "transparent",
+                        color: activeItem === item.text ? theme.palette.primary.main : theme.palette.text.primary,
                         "&:hover": {
-                          backgroundColor: activeItem === item.text ? "primary.light" : "action.hover",
+                          backgroundColor: activeItem === item.text ? theme.palette.primary.light : theme.palette.action.hover,
+                          transform: 'translateX(4px)', // Slight slide animation on hover
+                        },
+                        "&.Mui-selected": { // Ensure selected state looks good
+                          backgroundColor: theme.palette.primary.light,
+                          color: theme.palette.primary.main,
+                          "&:hover": {
+                            backgroundColor: theme.palette.primary.light,
+                          }
                         }
                       }}
                       onClick={() => handleMenuClick(item)}
+                      selected={activeItem === item.text} // Use selected prop for better styling control
                     >
                       <ListItemIcon
                         sx={{
                           minWidth: 0,
                           mr: open ? 2 : 'auto',
                           justifyContent: 'center',
-                          color: activeItem === item.text ? "primary.main" : "action.active"
+                          color: activeItem === item.text ? theme.palette.primary.main : theme.palette.action.active,
+                          transition: 'color 0.2s ease-in-out',
                         }}
                       >
                         {item.icon}
@@ -317,13 +413,13 @@ const AppSidebar: React.FC<AppSidebarProps> = ({
                         primary={item.text}
                         sx={{
                           opacity: open ? 1 : 0,
-                          transition: "opacity 0.2s",
+                          transition: "opacity 0.3s ease-in-out",
                           whiteSpace: "nowrap"
                         }}
                         primaryTypographyProps={{
-                          fontWeight: 500,
-                          fontSize: 14,
-                          color: activeItem === item.text ? "primary.main" : "text.primary"
+                          fontWeight: activeItem === item.text ? 600 : 500, // Bolder for active item
+                          fontSize: 15, // Slightly larger font size
+                          color: activeItem === item.text ? theme.palette.primary.main : theme.palette.text.primary
                         }}
                       />
                     </ListItemButton>
@@ -331,7 +427,7 @@ const AppSidebar: React.FC<AppSidebarProps> = ({
                 ))}
               </List>
               {idx < menu.length - 1 && (
-                <Divider sx={{ mx: open ? 2 : 1.5, my: 1 }} />
+                <Divider sx={{ mx: open ? 2 : 1.5, my: 2 }} /> // More vertical spacing for dividers
               )}
             </Box>
           ))}
@@ -341,55 +437,61 @@ const AppSidebar: React.FC<AppSidebarProps> = ({
         <Box
           sx={{
             p: open ? 2 : 1,
-            borderTop: "1px solid rgba(0, 0, 0, 0.12)",
+            borderTop: `1px solid ${theme.palette.divider}`,
             display: "flex",
             flexDirection: open ? "row" : "column",
             alignItems: "center",
             justifyContent: open ? "space-between" : "center",
             minHeight: 70,
-            background: "background.paper"
+            background: theme.palette.background.paper,
+            transition: 'all 0.3s ease-in-out',
           }}
         >
-          <Tooltip title={`${firstName} ${lastName}`} placement="right" arrow>
+          <Tooltip title={open ? "" : `${firstName} ${lastName}`} placement="right" arrow>
             <Box
               sx={{
                 display: "flex",
                 alignItems: "center",
                 width: open ? "100%" : "auto",
-                cursor: "pointer"
+                cursor: "pointer",
+                '&:hover': {
+                  opacity: 0.8, // Subtle hover effect
+                }
               }}
               onClick={handleUserMenuOpen}
             >
               <Avatar
                 sx={{
-                  width: 36,
-                  height: 36,
-                  bgcolor: "primary.main",
+                  width: 40, // Slightly larger avatar
+                  height: 40,
+                  bgcolor: theme.palette.primary.main,
                   color: "#fff",
                   fontWeight: 700,
-                  fontSize: 14,
+                  fontSize: 16, // Larger font for initials
                   mr: open ? 2 : 0,
+                  transition: 'margin 0.3s ease-in-out',
+                  boxShadow: theme.shadows[1], // Add a subtle shadow to the avatar
                 }}
               >
                 {userInitials}
               </Avatar>
               {open && (
                 <Box sx={{ flexGrow: 1, minWidth: 0 }}>
-                  <Typography variant="subtitle2" noWrap>
+                  <Typography variant="subtitle1" noWrap sx={{ fontWeight: 600 }}>
                     {firstName} {lastName}
                   </Typography>
                   <Typography variant="caption" color="text.secondary" noWrap>
-                    {role === "admin" ? "Admin" : "Cashier"}
+                    {role === "admin" ? "Administrator" : "Cashier"} {/* More descriptive role */}
                   </Typography>
                 </Box>
               )}
             </Box>
           </Tooltip>
           {open && (
-            <IconButton 
-              size="small" 
-              onClick={handleUserMenuOpen} 
-              sx={{ ml: 1 }}
+            <IconButton
+              size="small"
+              onClick={handleUserMenuOpen}
+              sx={{ ml: 1, transition: 'transform 0.3s ease-in-out', '&:hover': { transform: 'scale(1.1)' } }}
               aria-label="User menu"
             >
               <ExpandMore />
@@ -401,7 +503,7 @@ const AppSidebar: React.FC<AppSidebarProps> = ({
         <Menu
           anchorEl={userMenuAnchor}
           open={Boolean(userMenuAnchor)}
-          onClose={handleCloseMenu}
+          onClose={handleCloseUserMenu}
           anchorOrigin={{ vertical: "top", horizontal: "right" }}
           transformOrigin={{ vertical: "bottom", horizontal: "right" }}
           PaperProps={{
@@ -435,42 +537,47 @@ const AppSidebar: React.FC<AppSidebarProps> = ({
         sx={{
           flexGrow: 1,
           p: { xs: 2, sm: 3 },
-          width: `calc(100% - ${open ? drawerWidth : collapsedWidth}px)`,
+          width: isMobile ? '100%' : `calc(100% - ${open ? drawerWidth : collapsedWidth}px)`,
           transition: (theme) => theme.transitions.create(['margin', 'width'], {
             easing: theme.transitions.easing.sharp,
             duration: theme.transitions.duration.enteringScreen,
           }),
-          background: "background.default",
+          background: theme.palette.background.default, // Use theme background
           minHeight: "100vh",
-          marginLeft: { xs: 0, sm: `${open ? drawerWidth : collapsedWidth}px` },
-          position: "relative"
+          // Adjust margin-left based on sidebar state and mobile
+          marginLeft: isMobile ? 0 : `${open ? drawerWidth : collapsedWidth}px`,
+          mt: isMobile ? '64px' : 0, // Add top margin on mobile to account for AppBar
+          position: "relative",
         }}
       >
-        {/* Collapse Button */}
-        <IconButton
-          onClick={toggleSidebar}
-          sx={{
-            position: "fixed",
-            top: 16,
-            left: open ? drawerWidth - 12 : collapsedWidth - 12,
-            zIndex: 1200,
-            backgroundColor: "background.paper",
-            border: "1px solid",
-            borderColor: "divider",
-            boxShadow: 2,
-            transition: "left 0.3s, transform 0.3s",
-            "&:hover": {
-              backgroundColor: "background.paper",
-              transform: "scale(1.1)"
-            },
-            transform: open ? "rotate(0deg)" : "rotate(180deg)"
-          }}
-          size="medium"
-          aria-label={open ? "Collapse sidebar" : "Expand sidebar"}
-        >
-          <ChevronLeft />
-        </IconButton>
-        
+        {/* Collapse Button (visible only on desktop) */}
+        {!isMobile && (
+          <IconButton
+            onClick={toggleSidebar}
+            sx={{
+              position: "fixed",
+              top: 16,
+              left: open ? drawerWidth - 12 : collapsedWidth - 12,
+              zIndex: theme.zIndex.drawer + 1, // Ensure button is above content
+              backgroundColor: theme.palette.background.paper,
+              border: `1px solid ${theme.palette.divider}`,
+              color: theme.palette.text.secondary,
+              boxShadow: theme.shadows[2],
+              transition: "left 0.3s ease-in-out, transform 0.3s ease-in-out",
+              "&:hover": {
+                backgroundColor: theme.palette.background.paper,
+                transform: "scale(1.1)",
+                color: theme.palette.primary.main,
+              },
+              transform: open ? "rotate(0deg)" : "rotate(180deg)",
+            }}
+            size="medium"
+            aria-label={open ? "Collapse sidebar" : "Expand sidebar"}
+          >
+            <ChevronLeft />
+          </IconButton>
+        )}
+
         {children}
       </Box>
     </Box>

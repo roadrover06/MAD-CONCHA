@@ -16,7 +16,11 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  Stack, // Added for consistent spacing
+  Stack,
+  CircularProgress, // Added for loading states
+  createTheme, // Import createTheme for consistency
+  ThemeProvider, // Import ThemeProvider
+  CssBaseline, // Import CssBaseline
 } from "@mui/material";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { AdapterMoment } from "@mui/x-date-pickers/AdapterMoment";
@@ -38,8 +42,224 @@ import {
   TrendingUp as TrendingUpIcon,
   Star as StarIcon,
   TableChart as TableChartIcon,
+  Refresh as RefreshIcon, // Added RefreshIcon for the main refresh button
 } from "@mui/icons-material";
 import { motion } from "framer-motion";
+
+// Custom Material-UI Theme for consistent styling
+const theme = createTheme({
+  typography: {
+    fontFamily: '"Inter", sans-serif',
+    h3: {
+      fontFamily: '"Poppins", sans-serif',
+      fontWeight: 800,
+      letterSpacing: 1.5,
+    },
+    h4: {
+      fontFamily: '"Poppins", sans-serif',
+      fontWeight: 800,
+      letterSpacing: 1.5,
+    },
+    h5: {
+      fontFamily: '"Poppins", sans-serif',
+      fontWeight: 700,
+      letterSpacing: 1.2,
+    },
+    h6: {
+      fontFamily: '"Poppins", sans-serif',
+      fontWeight: 600,
+    },
+    subtitle1: {
+      fontFamily: '"Inter", sans-serif',
+      fontWeight: 500,
+    },
+    subtitle2: {
+      fontFamily: '"Inter", sans-serif',
+      fontWeight: 500,
+    },
+    body1: {
+      fontFamily: '"Inter", sans-serif',
+    },
+    body2: {
+      fontFamily: '"Inter", sans-serif',
+    },
+    button: {
+      textTransform: 'none',
+    },
+  },
+  palette: {
+    primary: {
+      main: '#ef5350',
+      light: '#ff8a80',
+      dark: '#d32f2f',
+    },
+    secondary: {
+      main: '#424242',
+    },
+    background: {
+      default: '#f0f2f5',
+      paper: 'rgba(255,255,255,0.95)',
+    },
+    success: {
+      main: '#4CAF50',
+      light: '#81C784',
+      dark: '#2E7D32',
+    },
+    info: {
+      main: '#2196F3',
+      light: '#64B5F6',
+      dark: '#1976D2',
+    },
+    warning: {
+      main: '#FFC107',
+      light: '#FFD54F',
+      dark: '#FF8F00',
+    },
+    error: {
+      main: '#f44336',
+      light: '#e57373',
+      dark: '#d32f2f',
+    },
+  },
+  components: {
+    MuiPaper: {
+      styleOverrides: {
+        root: {
+          borderRadius: '24px',
+          boxShadow: '0 10px 30px rgba(0,0,0,0.08)',
+        },
+      },
+    },
+    MuiCard: {
+      styleOverrides: {
+        root: {
+          borderRadius: '16px',
+          boxShadow: '0 6px 20px rgba(0,0,0,0.08)',
+          transition: 'all 0.3s cubic-bezier(.25,.8,.25,1)',
+          '&:hover': {
+            boxShadow: '0 12px 35px rgba(0,0,0,0.15)',
+            transform: 'translateY(-5px)',
+          },
+        },
+      },
+    },
+    MuiButton: {
+      styleOverrides: {
+        root: {
+          borderRadius: '16px',
+          textTransform: 'none',
+          fontWeight: 700,
+          letterSpacing: 0.5,
+          boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+          '&:hover': {
+            boxShadow: '0 8px 20px rgba(0,0,0,0.15)',
+          },
+        },
+      },
+    },
+    MuiChip: {
+      styleOverrides: {
+        root: {
+          borderRadius: '12px',
+          fontWeight: 600,
+          transition: 'all 0.2s ease-in-out',
+          '&:hover': {
+            transform: 'translateY(-2px)',
+            boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
+          },
+        },
+      },
+    },
+    MuiTextField: {
+      styleOverrides: {
+        root: {
+          '& .MuiOutlinedInput-root': {
+            borderRadius: '12px',
+            backgroundColor: 'rgba(255,255,255,0.8)',
+            '& fieldset': {
+              borderColor: '#e0e0e0',
+              transition: 'border-color 0.3s ease-in-out',
+            },
+            '&:hover fieldset': {
+              borderColor: '#ffab91',
+            },
+            '&.Mui-focused fieldset': {
+              borderColor: '#ef5350',
+              borderWidth: '2px',
+            },
+          },
+          '& .MuiInputLabel-root': {
+            color: '#666',
+          },
+          '& .MuiInputLabel-root.Mui-focused': {
+            color: '#ef5350',
+          },
+        },
+      },
+    },
+    MuiSelect: {
+      styleOverrides: {
+        root: {
+          borderRadius: '12px',
+          backgroundColor: 'rgba(255,255,255,0.8)',
+          '& .MuiOutlinedInput-notchedOutline': {
+            borderColor: '#e0e0e0',
+          },
+          '&:hover .MuiOutlinedInput-notchedOutline': {
+            borderColor: '#ffab91',
+          },
+          '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+            borderColor: '#ef5350',
+            borderWidth: '2px',
+          },
+        },
+      },
+    },
+    MuiDialog: {
+      styleOverrides: {
+        paper: {
+          borderRadius: '24px',
+          boxShadow: '0 15px 45px rgba(0,0,0,0.15)',
+        },
+      },
+    },
+    MuiTableHead: {
+      styleOverrides: {
+        root: {
+          backgroundColor: '#f5f5f5', // Use a hardcoded color instead of theme.palette.grey[100]
+        },
+      },
+    },
+    MuiTableCell: {
+      styleOverrides: {
+        head: {
+          fontWeight: 700,
+          color: '#212121', // Use a hardcoded color instead of theme.palette.text.primary
+        },
+      },
+    },
+    MuiLinearProgress: {
+      styleOverrides: {
+        root: {
+          borderRadius: 4,
+          height: 8,
+          backgroundColor: '#eeeeee', // Use a hardcoded color instead of theme.palette.grey[200]
+        },
+        bar: {
+          borderRadius: 4,
+          backgroundColor: '#ef5350', // Use a hardcoded color instead of theme.palette.primary.main
+        },
+      },
+    },
+    MuiAvatar: {
+      styleOverrides: {
+        root: {
+          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+        },
+      },
+    },
+  },
+});
 
 interface AdminDashboardProps {
   onLogout?: () => void;
@@ -66,7 +286,7 @@ interface PaymentRecord {
   paymentMethod?: string;
   amountTendered?: number;
   change?: number;
-  voided?: boolean; // Ensure this is present if you use it for filtering
+  voided?: boolean;
 }
 
 interface LoyaltyCustomer {
@@ -104,52 +324,54 @@ const StatCard = ({
   value: React.ReactNode;
   loading: boolean;
   color?: "primary" | "secondary" | "success" | "info" | "warning" | "error";
-}) => (
-  <Card
-    component={motion.div}
-    whileHover={{ y: -4 }}
-    sx={{
-      flex: "1 1 240px",
-      minWidth: 240,
-      borderRadius: 3,
-      boxShadow: 2,
-      transition: 'transform 0.2s',
-      '&:hover': {
-        boxShadow: 4,
-      }
-    }}
-  >
-    <CardContent sx={{ display: "flex", alignItems: "center", gap: 2, p: 3 }}>
-      <Box
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          bgcolor: `${color}.light`,
-          color: `${color}.dark`,
-          borderRadius: 2,
-          p: 2,
-          minWidth: 56,
-          minHeight: 56
-        }}
-      >
-        {icon}
-      </Box>
-      <Box sx={{ flexGrow: 1 }}>
-        <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 0.5 }}>
-          {title}
-        </Typography>
-        {loading ? (
-          <Skeleton variant="text" width={100} height={32} />
-        ) : (
-          <Typography variant="h5" fontWeight={700} color={`${color}.main`}>
-            {value}
+}) => {
+  const currentTheme = useTheme();
+  return (
+    <Card
+      component={motion.div}
+      whileHover={{ y: -5, boxShadow: currentTheme.shadows[8] }} // Stronger hover effect
+      sx={{
+        flex: "1 1 240px",
+        minWidth: 240,
+        borderRadius: 3,
+        boxShadow: currentTheme.shadows[4], // Increased default shadow
+        transition: 'all 0.3s cubic-bezier(.25,.8,.25,1)', // Smooth transition
+        bgcolor: "background.paper",
+      }}
+    >
+      <CardContent sx={{ display: "flex", alignItems: "center", gap: 2, p: 3 }}>
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            bgcolor: `${color}.light`,
+            color: `${color}.dark`,
+            borderRadius: '50%', // Circular background for icon
+            p: 2,
+            minWidth: 60, // Larger icon background
+            minHeight: 60,
+            boxShadow: currentTheme.shadows[2], // Subtle shadow for icon background
+          }}
+        >
+          {React.cloneElement(icon as React.ReactElement<any>, { sx: { fontSize: 32 } })} {/* Ensure icon size */}
+        </Box>
+        <Box sx={{ flexGrow: 1 }}>
+          <Typography variant="subtitle1" color="text.secondary" sx={{ mb: 0.5, fontWeight: 500 }}> {/* Bolder subtitle */}
+            {title}
           </Typography>
-        )}
-      </Box>
-    </CardContent>
-  </Card>
-);
+          {loading ? (
+            <CircularProgress size={24} color={color} /> // Use CircularProgress for loading
+          ) : (
+            <Typography variant="h5" fontWeight={700} color={`${color}.dark`}> {/* Darker color for value */}
+              {value}
+            </Typography>
+          )}
+        </Box>
+      </CardContent>
+    </Card>
+  );
+};
 
 const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onLogout,
@@ -157,8 +379,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
   firstName = "",
   lastName = ""
 }) => {
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const currentTheme = useTheme(); // Use currentTheme to access theme properties
+  const isMobile = useMediaQuery(currentTheme.breakpoints.down('sm'));
+  const isMd = useMediaQuery(currentTheme.breakpoints.down('md'));
+
   const [loading, setLoading] = useState(true);
   const [payments, setPayments] = useState<PaymentRecord[]>([]);
   const [loyaltyCustomers, setLoyaltyCustomers] = useState<LoyaltyCustomer[]>([]);
@@ -187,6 +411,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
         setServices(servicesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Service[]);
       } catch (error) {
         console.error("Error fetching data:", error);
+        // In a real app, you might show a Snackbar here
       } finally {
         setLoading(false);
       }
@@ -245,19 +470,15 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
     endMoment: Moment,
     shiftType: 'shift1' | 'shift2'
   ): PaymentRecord[] => {
-    // Define exact shift boundaries in hours for a standard day
     const SHIFT1_START_HOUR = 8; // 8:00 AM
     const SHIFT1_END_HOUR = 20;  // 8:00 PM (20:00)
 
-    const SHIFT2_START_HOUR = 20; // 8:00 PM (20:00)
-    // Shift 2 technically ends at 8 AM next day, handled by logic below
-
     return payments.filter(p => {
-      const paymentTime = moment.unix(p.createdAt / 1000); // Convert Unix timestamp (milliseconds) to Moment object
+      const paymentTime = moment.unix(p.createdAt / 1000);
 
       // 1. Filter by selected report date range (inclusive of full days)
       const isWithinReportRange = paymentTime.isSameOrAfter(startMoment.clone().startOf('day')) &&
-                                  paymentTime.isSameOrBefore(endMoment.clone().endOf('day'));
+                                   paymentTime.isSameOrBefore(endMoment.clone().endOf('day'));
 
       if (!isWithinReportRange) {
         return false;
@@ -271,21 +492,15 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
         return paymentHour >= SHIFT1_START_HOUR && paymentHour < SHIFT1_END_HOUR;
       } else { // shiftType === 'shift2'
         // Shift 2: 8:00 PM (inclusive) to 8:00 AM next day (exclusive)
-        // This requires checking if the payment is on the "current" day but after 8 PM,
-        // or on the "next" day but before 8 AM.
-
-        // Calculate the "effective" shift day start for the payment
-        // If payment is before 8 AM, it belongs to Shift 2 of the *previous* calendar day.
-        // If payment is 8 AM or later, it belongs to Shift 2 of the *current* calendar day.
         let effectiveShiftDayStart;
-        if (paymentHour < SHIFT1_START_HOUR) { // e.g., 6 AM, 7 AM means it's part of Shift 2 from previous day
+        if (paymentHour < SHIFT1_START_HOUR) {
             effectiveShiftDayStart = paymentTime.clone().subtract(1, 'day').startOf('day');
         } else {
             effectiveShiftDayStart = paymentTime.clone().startOf('day');
         }
 
-        const shift2StartMoment = effectiveShiftDayStart.clone().hour(SHIFT2_START_HOUR);
-        const shift2EndMoment = effectiveShiftDayStart.clone().add(1, 'day').hour(SHIFT1_START_HOUR); // 8:00 AM next day
+        const shift2StartMoment = effectiveShiftDayStart.clone().hour(SHIFT1_END_HOUR); // 8:00 PM of current effective day
+        const shift2EndMoment = effectiveShiftDayStart.clone().add(1, 'day').hour(SHIFT1_START_HOUR); // 8:00 AM of next effective day
 
         return paymentTime.isSameOrAfter(shift2StartMoment) && paymentTime.isBefore(shift2EndMoment);
       }
@@ -294,7 +509,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   // Filter payments for the selected date range first, then apply shift filter
   const paymentsInReportRange = payments.filter(p => {
-    const paymentTime = moment.unix(p.createdAt / 1000); // Use /1000 if createdAt is in milliseconds
+    const paymentTime = moment.unix(p.createdAt / 1000);
     return reportStartDate && reportEndDate &&
            paymentTime.isSameOrAfter(reportStartDate.clone().startOf('day')) &&
            paymentTime.isSameOrBefore(reportEndDate.clone().endOf('day')) &&
@@ -372,307 +587,387 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
     XLSX.writeFile(wb, `Shift_Sales_Report_${reportStartDate.format('YYYY-MM-DD')}_to_${reportEndDate.format('YYYY-MM-DD')}.xlsx`);
   };
 
+  // Framer Motion variants for staggered animations
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+      },
+    },
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" as const } },
+  };
+
+  // Fetch all data (used for Refresh button)
+  async function fetchAll(event?: React.MouseEvent<HTMLButtonElement, MouseEvent>) {
+    setLoading(true);
+    try {
+      const [paymentsSnap, loyaltySnap, employeesSnap, servicesSnap] = await Promise.all([
+        getDocs(collection(db, "payments")),
+        getDocs(collection(db, "loyalty_customers")),
+        getDocs(collection(db, "employees")),
+        getDocs(collection(db, "services"))
+      ]);
+      setPayments(paymentsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as PaymentRecord[]);
+      setLoyaltyCustomers(loyaltySnap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as LoyaltyCustomer[]);
+      setEmployees(employeesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Employee[]);
+      setServices(servicesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Service[]);
+    } catch (error) {
+      console.error("Error refreshing data:", error);
+      // Optionally show a Snackbar or alert here
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
-    <AppSidebar
-      role="admin"
-      onLogout={onLogout}
-      onProfile={onProfile}
-      firstName={firstName}
-      lastName={lastName}
-    >
-      <Box sx={{
-        p: { xs: 2, sm: 3, md: 4 },
-        maxWidth: 1400,
-        mx: "auto",
-        width: '100%'
-      }}>
-        {/* Header */}
-        <Paper
-          sx={{
-            p: 3,
-            mb: 4,
-            borderRadius: 3,
-            background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-            color: 'common.white',
-            boxShadow: 3
-          }}
-          component={motion.div}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          <Typography variant="h4" fontWeight={700} gutterBottom>
-            Admin Dashboard
-          </Typography>
-          <Typography variant="body1" sx={{ opacity: 0.9 }}>
-            Welcome back, {firstName}! Here's what's happening with your business.
-          </Typography>
-        </Paper>
-
-        {/* Dashboard Stats */}
-        <Box
-          sx={{
-            display: "flex",
-            flexWrap: "wrap",
-            gap: 3,
-            mb: 4,
-            justifyContent: { xs: "center", md: "flex-start" }
-          }}
-        >
-          <StatCard
-            icon={<MonetizationOnIcon sx={{ fontSize: 28 }} />}
-            title="Overall Sales"
-            value={peso(overallSales)}
-            loading={loading}
-            color="success"
-          />
-          <StatCard
-            icon={<BuildIcon sx={{ fontSize: 28 }} />}
-            title="Total Services"
-            value={totalServices}
-            loading={loading}
-            color="info"
-          />
-          <StatCard
-            icon={<PeopleIcon sx={{ fontSize: 28 }} />}
-            title="Loyalty Customers"
-            value={totalLoyaltyCustomers}
-            loading={loading}
-            color="warning"
-          />
-          <StatCard
-            icon={<GroupIcon sx={{ fontSize: 28 }} />}
-            title="Total Employees"
-            value={totalEmployees}
-            loading={loading}
-            color="secondary"
-          />
-        </Box>
-
-        {/* Analytics Sections */}
-        <Box sx={{ display: 'flex', flexDirection: { xs: 'column', lg: 'row' }, gap: 3, mb: 4 }}>
-          {/* Most Availed Services */}
-          <Card
-            sx={{
-              flex: 1,
-              borderRadius: 3,
-              boxShadow: 2,
-              minWidth: 300
-            }}
-            component={motion.div}
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
+    <ThemeProvider theme={theme}> {/* Apply the custom theme */}
+      <CssBaseline /> {/* Apply base CSS for consistent styling */}
+      <AppSidebar
+        role="admin"
+        onLogout={onLogout}
+        onProfile={onProfile}
+        firstName={firstName}
+        lastName={lastName}
+      >
+        <Box sx={{
+          p: { xs: 2, sm: 3, md: 4 },
+          maxWidth: 1400,
+          mx: "auto",
+          width: '100%'
+        }}>
+          {/* Header */}
+          <motion.div
+            initial="hidden"
+            animate="visible"
+            variants={itemVariants}
           >
-            <CardContent sx={{ p: 3 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                <TrendingUpIcon color="warning" sx={{ mr: 1.5, fontSize: 32 }} />
-                <Typography variant="h6" fontWeight={700}>
-                  Most Availed Services
+            <Paper
+              elevation={4}
+              sx={{
+                p: { xs: 2.5, sm: 4 }, // Increased padding
+                mb: 4,
+                borderRadius: 4,
+                background: `linear-gradient(135deg, ${currentTheme.palette.primary.light} 0%, ${currentTheme.palette.primary.main} 100%)`,
+                color: currentTheme.palette.primary.contrastText,
+                boxShadow: currentTheme.shadows[6], // Stronger shadow
+                display: "flex",
+                flexDirection: { xs: "column", sm: "row" },
+                alignItems: { xs: "flex-start", sm: "center" },
+                justifyContent: "space-between",
+                gap: 2,
+              }}
+            >
+              <Box>
+                <Typography variant={isMobile ? "h5" : "h3"} fontWeight={700} gutterBottom>
+                  Admin Dashboard
+                </Typography>
+                <Typography variant="body1" sx={{ opacity: 0.9 }}>
+                  Welcome back, {firstName}! Here's what's happening with your business.
                 </Typography>
               </Box>
-              <Divider sx={{ mb: 3 }} />
-              {loading ? (
-                <Box sx={{ display: 'flex', gap: 2 }}>
-                  {[1, 2, 3].map((i) => (
-                    <Skeleton key={i} variant="rounded" width={120} height={40} />
-                  ))}
-                </Box>
-              ) : mostAvailed.length === 0 ? (
-                <Typography color="text.secondary" sx={{ fontStyle: 'italic' }}>
-                  No services availed yet.
-                </Typography>
-              ) : (
-                <Box sx={{
-                  display: "flex",
-                  gap: 2,
-                  flexWrap: "wrap",
-                  '& .MuiChip-root': {
-                    borderRadius: 2,
-                    px: 2,
-                    py: 1.5,
-                    fontSize: 15
-                  }
-                }}>
-                  {mostAvailed.map(([service, count], idx) => (
-                    <Chip
-                      key={service}
-                      label={`${service} (${count})`}
-                      color={idx === 0 ? "warning" : idx === 1 ? "info" : "default"}
-                      icon={<EmojiEventsIcon />}
-                      sx={{ fontWeight: 600 }}
-                    />
-                  ))}
-                </Box>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Top Customers */}
-          <Card
-            sx={{
-              flex: 1,
-              borderRadius: 3,
-              boxShadow: 2,
-              minWidth: 300
-            }}
-            component={motion.div}
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-          >
-            <CardContent sx={{ p: 3 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                <StarIcon color="primary" sx={{ mr: 1.5, fontSize: 32 }} />
-                <Typography variant="h6" fontWeight={700}>
-                  Top Customers
-                </Typography>
-              </Box>
-              <Divider sx={{ mb: 3 }} />
-              {loading ? (
-                <Box sx={{ display: 'flex', gap: 2 }}>
-                  {[1, 2, 3].map((i) => (
-                    <Skeleton key={i} variant="rounded" width={120} height={40} />
-                  ))}
-                </Box>
-              ) : topCustomers.length === 0 ? (
-                <Typography color="text.secondary" sx={{ fontStyle: 'italic' }}>
-                  No customer records yet.
-                </Typography>
-              ) : (
-                <Box sx={{
-                  display: "flex",
-                  gap: 2,
-                  flexWrap: "wrap",
-                  '& .MuiChip-root': {
-                    borderRadius: 2,
-                    px: 2,
-                    py: 1.5,
-                    fontSize: 15
-                  }
-                }}>
-                  {topCustomers.map(([customer, count], idx) => (
-                    <Chip
-                      key={customer}
-                      label={`${customer} (${count})`}
-                      color={idx === 0 ? "primary" : idx === 1 ? "info" : "default"}
-                      icon={<PersonIcon />}
-                      sx={{ fontWeight: 600 }}
-                    />
-                  ))}
-                </Box>
-              )}
-            </CardContent>
-          </Card>
-        </Box>
-
-        {/* --- Shift Sales Report Section --- */}
-        <Card
-          sx={{
-            borderRadius: 3,
-            boxShadow: 2,
-            p: 3,
-            mb: 4,
-            transition: 'transform 0.2s',
-            '&:hover': {
-              boxShadow: 4,
-            }
-          }}
-          component={motion.div}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.3 }}
-        >
-          <CardContent>
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-              <MonetizationOnIcon color="success" sx={{ mr: 1.5, fontSize: 32 }} />
-              <Typography variant="h6" fontWeight={700}>
-                Shift Sales Reports
-              </Typography>
-            </Box>
-            <Divider sx={{ mb: 3 }} />
-
-            <LocalizationProvider dateAdapter={AdapterMoment}>
-              <Stack direction={isMobile ? 'column' : 'row'} spacing={2} mb={3}>
-                <DatePicker
-                  label="Start Date"
-                  value={reportStartDate}
-                  onChange={(newValue: Moment | null) => setReportStartDate(newValue)}
-                  enableAccessibleFieldDOMStructure={false}
-                  slots={{ textField: TextField }}
-                  slotProps={{ textField: { fullWidth: true } }}
-                />
-                <DatePicker
-                  label="End Date"
-                  value={reportEndDate}
-                  onChange={(newValue: Moment | null) => setReportEndDate(newValue)}
-                  enableAccessibleFieldDOMStructure={false}
-                  slots={{ textField: TextField }}
-                  slotProps={{ textField: { fullWidth: true } }}
-                />
-              </Stack>
-            </LocalizationProvider>
-
-            {/* Shift Selection Dropdown */}
-            <FormControl fullWidth sx={{ mb: 3 }}>
-              <InputLabel id="shift-select-label">Select Shift for Report</InputLabel>
-              <Select
-                labelId="shift-select-label"
-                id="shift-select"
-                value={reportShiftType}
-                label="Select Shift for Report"
-                onChange={(e) => setReportShiftType(e.target.value as 'all' | 'shift1' | 'shift2')}
-                sx={{ borderRadius: 2 }}
-              >
-                <MenuItem value="all">All Shifts (Includes Shift 1 & 2 for selected period)</MenuItem>
-                <MenuItem value="shift1">Shift 1 (8:00 AM - 7:59 PM)</MenuItem>
-                <MenuItem value="shift2">Shift 2 (8:00 PM - 7:59 AM Next Day)</MenuItem>
-              </Select>
-            </FormControl>
-
-            <Box sx={{ mb: 3 }}>
-              <Typography variant="subtitle1" fontWeight={600} gutterBottom>
-                Sales for Selected Period ({reportStartDate?.format('MMM DD, YYYY')} to {reportEndDate?.format('MMM DD, YYYY')})
-              </Typography>
-              {loading ? (
-                <Stack spacing={1}>
-                  <Skeleton variant="text" width="80%" height={24} />
-                  <Skeleton variant="text" width="70%" height={24} />
-                  <Skeleton variant="text" width="60%" height={28} />
-                </Stack>
-              ) : (
-                <>
-                  <Typography variant="body1">
-                    <strong>Shift 1 (8 AM - 8 PM):</strong> {peso(shift1Sales)} ({shift1Payments.length} transactions)
-                  </Typography>
-                  <Typography variant="body1">
-                    <strong>Shift 2 (8 PM - 8 AM next day):</strong> {peso(shift2Sales)} ({shift2Payments.length} transactions)
-                  </Typography>
-                  <Typography variant="h6" mt={1}>
-                    <strong>Total Sales for Period:</strong> {peso(shift1Sales + shift2Sales)}
-                  </Typography>
-                </>
-              )}
-            </Box>
-
-            <Box sx={{ display: 'flex', gap: 2, flexDirection: isMobile ? 'column' : 'row' }}>
               <Button
+                onClick={fetchAll}
                 variant="contained"
-                color="success"
-                startIcon={<TableChartIcon />}
-                onClick={generateExcelReport}
-                disabled={loading || !reportStartDate || !reportEndDate}
-                sx={{ flex: 1, py: 1.5, borderRadius: 2 }}
+                color="secondary" // Secondary color for contrast
+                sx={{
+                  borderRadius: 2.5, // More rounded button
+                  fontWeight: 600,
+                  minWidth: 120,
+                  px: 3,
+                  py: 1.5,
+                  alignSelf: { xs: "flex-end", sm: "center" },
+                  boxShadow: currentTheme.shadows[3],
+                  "&:hover": {
+                    boxShadow: currentTheme.shadows[6],
+                    transform: "translateY(-2px)",
+                  },
+                }}
+                startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <RefreshIcon />}
+                disabled={loading}
               >
-                Generate Excel Report
+                {loading ? "Loading..." : "Refresh Data"}
               </Button>
-            </Box>
-          </CardContent>
-        </Card>
-        {/* --- End Shift Sales Report Section --- */}
+            </Paper>
+          </motion.div>
 
-      </Box>
-    </AppSidebar>
+          {/* Dashboard Stats */}
+          <motion.div
+            initial="hidden"
+            animate="visible"
+            variants={containerVariants}
+            style={{
+              display: "grid",
+              gridTemplateColumns: isMd ? "repeat(auto-fit, minmax(220px, 1fr))" : "repeat(auto-fit, minmax(250px, 1fr))",
+              gap: currentTheme.spacing(3),
+              marginBottom: currentTheme.spacing(4),
+              justifyContent: "center",
+            }}
+          >
+            <motion.div variants={itemVariants}>
+              <StatCard
+                icon={<MonetizationOnIcon />}
+                title="Overall Sales"
+                value={peso(overallSales)}
+                loading={loading}
+                color="success"
+              />
+            </motion.div>
+            <motion.div variants={itemVariants}>
+              <StatCard
+                icon={<BuildIcon />}
+                title="Total Services"
+                value={totalServices}
+                loading={loading}
+                color="info"
+              />
+            </motion.div>
+            <motion.div variants={itemVariants}>
+              <StatCard
+                icon={<PeopleIcon />}
+                title="Loyalty Customers"
+                value={totalLoyaltyCustomers}
+                loading={loading}
+                color="warning"
+              />
+            </motion.div>
+            <motion.div variants={itemVariants}>
+              <StatCard
+                icon={<GroupIcon />}
+                title="Total Employees"
+                value={totalEmployees}
+                loading={loading}
+                color="secondary"
+              />
+            </motion.div>
+          </motion.div>
+
+          {/* Analytics Sections */}
+          <Box sx={{ display: 'flex', flexDirection: { xs: 'column', lg: 'row' }, gap: 3, mb: 4 }}>
+            {/* Most Availed Services */}
+            <motion.div
+              initial="hidden"
+              animate="visible"
+              variants={itemVariants}
+              style={{ flex: 1, minWidth: 300 }}
+            >
+              <Card
+                elevation={4} // Stronger shadow
+                sx={{
+                  borderRadius: 3,
+                  boxShadow: currentTheme.shadows[4],
+                  bgcolor: "background.paper",
+                }}
+              >
+                <CardContent sx={{ p: 3 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                    <TrendingUpIcon color="warning" sx={{ mr: 1.5, fontSize: 32 }} />
+                    <Typography variant="h6" fontWeight={700}>
+                      Most Availed Services
+                    </Typography>
+                  </Box>
+                  <Divider sx={{ mb: 3 }} />
+                  {loading ? (
+                    <Stack spacing={1}>
+                      <Skeleton variant="rounded" width="80%" height={40} />
+                      <Skeleton variant="rounded" width="70%" height={40} />
+                      <Skeleton variant="rounded" width="60%" height={40} />
+                    </Stack>
+                  ) : mostAvailed.length === 0 ? (
+                    <Typography color="text.secondary" sx={{ fontStyle: 'italic', p: 1 }}>
+                      No services availed yet.
+                    </Typography>
+                  ) : (
+                    <Box sx={{
+                      display: "flex",
+                      gap: 2,
+                      flexWrap: "wrap",
+                    }}>
+                      {mostAvailed.map(([service, count], idx) => (
+                        <Chip
+                          key={service}
+                          label={`${service} (${count})`}
+                          color={idx === 0 ? "warning" : idx === 1 ? "info" : "default"}
+                          icon={<EmojiEventsIcon />}
+                          sx={{ fontWeight: 600, fontSize: 15, px: 2, py: 1.5 }}
+                        />
+                      ))}
+                    </Box>
+                  )}
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            {/* Top Customers */}
+            <motion.div
+              initial="hidden"
+              animate="visible"
+              variants={itemVariants}
+              style={{ flex: 1, minWidth: 300 }}
+            >
+              <Card
+                elevation={4} // Stronger shadow
+                sx={{
+                  borderRadius: 3,
+                  boxShadow: currentTheme.shadows[4],
+                  bgcolor: "background.paper",
+                }}
+              >
+                <CardContent sx={{ p: 3 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                    <StarIcon color="primary" sx={{ mr: 1.5, fontSize: 32 }} />
+                    <Typography variant="h6" fontWeight={700}>
+                      Top Customers
+                    </Typography>
+                  </Box>
+                  <Divider sx={{ mb: 3 }} />
+                  {loading ? (
+                    <Stack spacing={1}>
+                      <Skeleton variant="rounded" width="80%" height={40} />
+                      <Skeleton variant="rounded" width="70%" height={40} />
+                      <Skeleton variant="rounded" width="60%" height={40} />
+                    </Stack>
+                  ) : topCustomers.length === 0 ? (
+                    <Typography color="text.secondary" sx={{ fontStyle: 'italic', p: 1 }}>
+                      No customer records yet.
+                    </Typography>
+                  ) : (
+                    <Box sx={{
+                      display: "flex",
+                      gap: 2,
+                      flexWrap: "wrap",
+                    }}>
+                      {topCustomers.map(([customer, count], idx) => (
+                        <Chip
+                          key={customer}
+                          label={`${customer} (${count})`}
+                          color={idx === 0 ? "primary" : idx === 1 ? "info" : "default"}
+                          icon={<PersonIcon />}
+                          sx={{ fontWeight: 600, fontSize: 15, px: 2, py: 1.5 }}
+                        />
+                      ))}
+                    </Box>
+                  )}
+                </CardContent>
+              </Card>
+            </motion.div>
+          </Box>
+
+          {/* --- Shift Sales Report Section --- */}
+          <motion.div
+            initial="hidden"
+            animate="visible"
+            variants={itemVariants}
+          >
+            <Card
+              elevation={4} // Stronger shadow
+              sx={{
+                borderRadius: 3,
+                boxShadow: currentTheme.shadows[4],
+                p: 3,
+                mb: 4,
+                bgcolor: "background.paper",
+              }}
+            >
+              <CardContent>
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                  <MonetizationOnIcon color="success" sx={{ mr: 1.5, fontSize: 32 }} />
+                  <Typography variant="h6" fontWeight={700}>
+                    Shift Sales Reports
+                  </Typography>
+                </Box>
+                <Divider sx={{ mb: 3 }} />
+
+                <LocalizationProvider dateAdapter={AdapterMoment}>
+                  <Stack direction={isMobile ? 'column' : 'row'} spacing={2} mb={3}>
+                    <DatePicker
+                      label="Start Date"
+                      value={reportStartDate}
+                      onChange={(newValue: Moment | null) => setReportStartDate(newValue)}
+                      enableAccessibleFieldDOMStructure={false}
+                      slots={{ textField: TextField }}
+                      slotProps={{ textField: { fullWidth: true, variant: "outlined", size: "medium" } }}
+                    />
+                    <DatePicker
+                      label="End Date"
+                      value={reportEndDate}
+                      onChange={(newValue: Moment | null) => setReportEndDate(newValue)}
+                      enableAccessibleFieldDOMStructure={false}
+                      slots={{ textField: TextField }}
+                      slotProps={{ textField: { fullWidth: true, variant: "outlined", size: "medium" } }}
+                    />
+                  </Stack>
+                </LocalizationProvider>
+
+                {/* Shift Selection Dropdown */}
+                <FormControl fullWidth sx={{ mb: 3 }}>
+                  <InputLabel id="shift-select-label">Select Shift for Report</InputLabel>
+                  <Select
+                    labelId="shift-select-label"
+                    id="shift-select"
+                    value={reportShiftType}
+                    label="Select Shift for Report"
+                    onChange={(e) => setReportShiftType(e.target.value as 'all' | 'shift1' | 'shift2')}
+                    sx={{ borderRadius: 2 }}
+                    variant="outlined" // Consistent variant
+                    size="medium" // Consistent size
+                  >
+                    <MenuItem value="all">All Shifts (Includes Shift 1 & 2 for selected period)</MenuItem>
+                    <MenuItem value="shift1">Shift 1 (8:00 AM - 7:59 PM)</MenuItem>
+                    <MenuItem value="shift2">Shift 2 (8:00 PM - 7:59 AM Next Day)</MenuItem>
+                  </Select>
+                </FormControl>
+
+                <Box sx={{ mb: 3, p: 2, bgcolor: currentTheme.palette.grey[50], borderRadius: 2 }}> {/* Subtle background for summary */}
+                  <Typography variant="subtitle1" fontWeight={600} gutterBottom>
+                    Sales for Selected Period ({reportStartDate?.format('MMM DD, YYYY')} to {reportEndDate?.format('MMM DD, YYYY')})
+                  </Typography>
+                  {loading ? (
+                    <Stack spacing={1}>
+                      <Skeleton variant="text" width="80%" height={24} />
+                      <Skeleton variant="text" width="70%" height={24} />
+                      <Skeleton variant="text" width="60%" height={28} />
+                    </Stack>
+                  ) : (
+                    <>
+                      <Typography variant="body1" sx={{ mb: 0.5 }}>
+                        <strong>Shift 1 (8 AM - 8 PM):</strong> {peso(shift1Sales)} ({shift1Payments.length} transactions)
+                      </Typography>
+                      <Typography variant="body1" sx={{ mb: 1.5 }}>
+                        <strong>Shift 2 (8 PM - 8 AM next day):</strong> {peso(shift2Sales)} ({shift2Payments.length} transactions)
+                      </Typography>
+                      <Typography variant="h6" color="primary.dark"> {/* Highlight total sales */}
+                        <strong>Total Sales for Period:</strong> {peso(shift1Sales + shift2Sales)}
+                      </Typography>
+                    </>
+                  )}
+                </Box>
+
+                <Box sx={{ display: 'flex', gap: 2, flexDirection: isMobile ? 'column' : 'row' }}>
+                  <Button
+                    variant="contained"
+                    color="success"
+                    startIcon={<TableChartIcon />}
+                    onClick={generateExcelReport}
+                    disabled={loading || !reportStartDate || !reportEndDate}
+                    sx={{ flex: 1, py: 1.5, borderRadius: 2, fontWeight: 700 }}
+                  >
+                    Generate Excel Report
+                  </Button>
+                </Box>
+              </CardContent>
+            </Card>
+          </motion.div>
+          {/* --- End Shift Sales Report Section --- */}
+
+        </Box>
+      </AppSidebar>
+    </ThemeProvider>
   );
 };
 

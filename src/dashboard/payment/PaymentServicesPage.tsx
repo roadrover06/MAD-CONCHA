@@ -392,14 +392,29 @@ const PaymentServicesPage: React.FC<PaymentServicesPageProps> = ({
         return;
       }
 
-      const employees = Array.isArray(form.employees) ? form.employees : [];
+      // Always use an array for employees, even if empty
+      const employees: { id: string; name: string; commission: number }[] =
+        Array.isArray(form.employees)
+          ? form.employees.filter(e => e && typeof e.id === "string" && e.id.trim() !== "")
+          : [];
 
+      // Defensive: If no referrer, do not include referrer field at all
       let referrerObj: PaymentRecord["referrer"] = undefined;
       if (form.referrerId && form.referrerId !== "") {
-        const empObj = employees.find(e => e.id === form.referrerId);
+        // Try to find the referrer in employees, fallback to employees list if not found
         let refEmpFullName = "";
-        if (empObj && "name" in empObj && typeof empObj.name === "string") {
+        // Try to find in employees (may be empty)
+        const empObj = employees.find(e => e.id === form.referrerId);
+        if (empObj && typeof empObj.name === "string") {
           refEmpFullName = empObj.name;
+        } else {
+          // fallback: find in all employees list
+          const emp = employees.length === 0 && Array.isArray(employees)
+            ? undefined
+            : employees.find(e => e.id === form.referrerId);
+          if (emp && typeof emp.name === "string") {
+            refEmpFullName = emp.name;
+          }
         }
         referrerObj = {
           id: form.referrerId,
@@ -410,12 +425,15 @@ const PaymentServicesPage: React.FC<PaymentServicesPageProps> = ({
 
       // Get service names for all selected services
       const selectedServices = form.serviceIds.map(id => services.find(s => s.id === id)).filter(Boolean) as Service[];
-      // Store manual services as "Name (₱Price)" in serviceNames for display, but also save full manualServices array
       const manualServiceDisplayNames = manualServices.map(s => `${s.name} (${peso(s.price)})`);
       const serviceNames = [
         ...selectedServices.map(s => s.name),
         ...manualServiceDisplayNames
       ];
+
+      // --- FIX: Always provide employees as an array, even if empty. ---
+      // --- FIX: If no referrer, do not include the field at all. ---
+      // --- FIX: manualServices can be undefined if empty. ---
 
       const record: PaymentRecord = {
         customerName,
@@ -429,7 +447,7 @@ const PaymentServicesPage: React.FC<PaymentServicesPageProps> = ({
         price: form.price,
         cashier: cashierUsername,
         cashierFullName: [firstName, lastName].filter(Boolean).join(" "),
-        employees,
+        employees, // always an array, even if empty
         ...(referrerObj ? { referrer: referrerObj } : {}),
         createdAt: Date.now(),
         paid: !payLater,
@@ -438,11 +456,12 @@ const PaymentServicesPage: React.FC<PaymentServicesPageProps> = ({
           amountTendered: typeof amountTendered === "number" ? amountTendered : undefined,
           change: typeof amountTendered === "number" ? amountTendered - form.price : undefined
         }),
-        manualServices: manualServices.length > 0 ? manualServices : undefined // <-- store manual services in DB
+        ...(manualServices.length > 0 ? { manualServices } : {})
       };
 
+      // --- FIX: Firestore does not allow undefined for array fields, so always provide employees: [] ---
+
       if (payingRecordId) {
-        // Update existing unpaid record to paid
         const { updateDoc, doc } = await import("firebase/firestore");
         await updateDoc(doc(db, "payments", payingRecordId), {
           paid: true,
@@ -451,7 +470,6 @@ const PaymentServicesPage: React.FC<PaymentServicesPageProps> = ({
           change: typeof amountTendered === "number" ? amountTendered - form.price : undefined,
           createdAt: Date.now()
         });
-        // Decrease chemicals stock for all services if now paid
         for (const sid of form.serviceIds) {
           await decreaseChemicalsStock(sid, form.variety);
         }
@@ -486,7 +504,7 @@ const PaymentServicesPage: React.FC<PaymentServicesPageProps> = ({
       });
       setAmountTendered("");
       setChange(0);
-      setManualServices([]); // clear manual services after save
+      setManualServices([]);
       fetchRecords();
     } catch (err) {
       setSnackbar({ open: true, message: "Failed to record payment", severity: "error" });
@@ -1175,7 +1193,13 @@ const PaymentServicesPage: React.FC<PaymentServicesPageProps> = ({
           <Button
             variant="contained"
             onClick={handleProcessPayment}
-            disabled={!form.customerName || !form.carName || !form.plateNumber || (form.serviceIds.length === 0 && manualServices.length === 0)}
+            disabled={
+              !form.customerName ||
+              !form.carName ||
+              !form.plateNumber ||
+              (form.serviceIds.length === 0 && manualServices.length === 0)
+              // No check for employees or referrer!
+            }
           >
             Process Payment
           </Button>
