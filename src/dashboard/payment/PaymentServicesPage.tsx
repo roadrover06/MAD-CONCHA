@@ -51,10 +51,12 @@ const getDocRef = (db: Firestore, collection: string, id: string) => {
   return firestoreDoc(db, collection, id);
 };
   const VARIETIES = [
-    { key: "medium", label: "Medium" },
-    { key: "large", label: "Large" },
-    { key: "xlarge", label: "X-Large" }
-  ];
+  { key: "motor", label: "Motor" },
+  { key: "small", label: "Small" },
+  { key: "medium", label: "Medium" },
+  { key: "large", label: "Large" },
+  { key: "xlarge", label: "X-Large" }
+];
 
 const PAYMENT_METHODS = [
   { key: "cash", label: "Cash" },
